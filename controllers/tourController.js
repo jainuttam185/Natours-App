@@ -13,7 +13,7 @@ exports.checkID = (req,res,next,val)=>{
     });
   }
     next();
-};
+}; 
 
 exports.checkBody=(req,res,next)=>{
   if(!req.body.name || !req.body.price){
