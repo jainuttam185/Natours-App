@@ -1,6 +1,6 @@
 // const fs = require('fs');
 const Tour = require('./../models/tourModel');
-const APIFeatures=require('./../utils/apifeatures');
+const APIFeatures = require('./../utils/apifeatures');
 
 // const tours = JSON.parse(
 //     fs.readFileSync(`${__dirname}/../dev-data/data/tours-simple.json`)
@@ -34,38 +34,37 @@ exports.aliasTopTours = (req, res, next) => {
   next();
 };
 
-
 exports.getAllTours = async (req, res) => {
   try {
     // Build query
     // 1) Build Query
-  // const queryObj = { ...req.query };
-  // const excludeFields = ['page', 'sort', 'limit', 'fields'];
-  // excludeFields.forEach((el) => delete queryObj[el]);
+    // const queryObj = { ...req.query };
+    // const excludeFields = ['page', 'sort', 'limit', 'fields'];
+    // excludeFields.forEach((el) => delete queryObj[el]);
 
-  // // 2) Advanced filtering
-  // let queryStr = JSON.stringify(queryObj);
-  // queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
-  // console.log(JSON.parse(queryStr));
-  // let query = Tour.find(JSON.parse(queryStr));
+    // // 2) Advanced filtering
+    // let queryStr = JSON.stringify(queryObj);
+    // queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
+    // console.log(JSON.parse(queryStr));
+    // let query = Tour.find(JSON.parse(queryStr));
 
-  // // 3) Sorting
+    // // 3) Sorting
 
-  // if (req.query.sort) {
-  //   const sortBy = req.query.sort.split(',').join(' ');
-  //   query = query.sort(sortBy);
-  // } else {
-  //   query = query.sort('-createdAt');
-  // }
+    // if (req.query.sort) {
+    //   const sortBy = req.query.sort.split(',').join(' ');
+    //   query = query.sort(sortBy);
+    // } else {
+    //   query = query.sort('-createdAt');
+    // }
 
-  // //3) Field Limiting
+    // //3) Field Limiting
 
-  // if (req.query.fields) {
-  //   const fields = req.query.fields.split(',').join(' ');
-  //   query = query.select(fields);
-  // } else {
-  //   query = query.select('-__v');
-  // }
+    // if (req.query.fields) {
+    //   const fields = req.query.fields.split(',').join(' ');
+    //   query = query.select(fields);
+    // } else {
+    //   query = query.select('-__v');
+    // }
 
     // const query = Tour.find()
     //     .where('duration')
@@ -87,7 +86,11 @@ exports.getAllTours = async (req, res) => {
     // }
 
     //Execute query
-    const features=new APIFeatures(Tour.find(),req.query).filter().sort().limit().paginate();
+    const features = new APIFeatures(Tour.find(), req.query)
+      .filter()
+      .sort()
+      .limit()
+      .paginate();
     const tours = await features.query;
     //query.sort().select().skip().limit()
 
@@ -181,6 +184,90 @@ exports.deleteTour = async (req, res) => {
     res.status(204).json({
       status: 'success',
       data: null,
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: 'failed',
+      message: 'Invalid ID Sent',
+    });
+  }
+};
+
+exports.getTourStats = async (req, res) => {
+  try {
+    const stats = await Tour.aggregate([
+      {
+        $match: { ratingAverage: { $gte: 4.5 } },
+      },
+      {
+        $group: {
+          _id: '$difficulty',
+          num: { $sum: 1 },
+          numRatings: { $sum: '$ratingQuantity' },
+          avgRating: { $avg: '$ratingAverage' },
+          avgPrice: { $avg: '$price' },
+          minPrice: { $min: '$price' },
+          maxPrice: { $max: '$price' },
+        },
+      },
+    ]);
+    res.status(201).json({
+      status: 'success',
+      data: {
+        stats,
+      },
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: 'failed',
+      message: 'Invalid ID Sent',
+    });
+  }
+};
+
+exports.getMonthlyPlan = async (req, res) => {
+  try {
+    const year = req.params.year * 1;
+    console.log(year);
+    const plan = await Tour.aggregate([
+      {
+        $unwind: '$startDates',
+      },
+      {
+        $match: {
+          startDates: {
+            $gte: new Date(`${year}-01-01`),
+            $lte: new Date(`${year}-12-31`),
+          },
+        },
+      },
+      {
+        $group: {
+          _id: { $month: '$startDates' },
+          numTourStarts: { $sum: 1 },
+          tours: { $push: '$name' },
+        }
+      },
+      {
+        $addFields: { month: '$_id' }
+      },
+      {
+        $project: {
+          _id: 0
+        }
+      },
+      {
+        $sort: {
+          numTourStarts: -1
+        }
+      },
+      { $limit: 6 },
+    ]);
+    res.status(201).json({
+      status: 'success',
+      data: {
+        plan,
+      },
     });
   } catch (err) {
     res.status(400).json({
