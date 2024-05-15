@@ -3,7 +3,8 @@ const app = express();
 const morgan = require ("morgan");
 const tourRouter=require('./routes/tourRoutes');
 const userRouter=require('./routes/userRoutes');
-
+const AppError =require('./utils/appError');
+const globalErrorHandler=require('./controllers/errorController');
 // app.get('/',(req,res)=>{
 //     res.status(200).json({message:'Hello from the server side',app:'Natours'});
 // });
@@ -53,21 +54,13 @@ app.all('*',(req,res,next)=>{
   //    status:'fail',
   //    message:`Can't find ${req.originalUrl} on this server!`
   // });
-  const err=new Error(`Can't find ${req.originalUrl} on this server!`);
-  err.statusCode=404;
-  err.status='fail';
-  next(err);
+  // const err=new Error(`Can't find ${req.originalUrl} on this server!`);
+  // err.statusCode=404;
+  // err.status='fail';
+  next(new AppError(`Can't find ${req.originalUrl} on this server!`,404));
 });
 
-app.use((err,req,res,next)=>{
-    err.statusCode=err.statusCode ||500;
-    err.status=err.status || 'error';
-
-    res.status(err.statusCode).json({
-      status:err.status,
-      message:err.message
-    });
-});
+app.use(globalErrorHandler);
 
   
   // START SERVER
