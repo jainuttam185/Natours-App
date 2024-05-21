@@ -1,7 +1,7 @@
 // const fs = require('fs');
 const Tour = require('./../models/tourModel');
 const APIFeatures = require('./../utils/apifeatures');
-
+const catchAsync =require('./../utils/catchAsync');
 // const tours = JSON.parse(
 //     fs.readFileSync(`${__dirname}/../dev-data/data/tours-simple.json`)
 //   );
@@ -133,7 +133,8 @@ exports.getTour = async (req, res) => {
   }
 };
 
-exports.createTour = async (req, res) => {
+
+exports.createTour = catchAsync(async (req, res,next) => {
   // console.log(req.body);
   // const newId = tours[tours.length - 1].id + 1;
   // const newTour = Object.assign({ id: newId }, req.body);
@@ -142,7 +143,6 @@ exports.createTour = async (req, res) => {
   //   `${__dirname}/dev-data/data/tours-simple.json`,
   //   JSON.stringify(tours),
   //   (err) => {
-  try {
     const newTour = await Tour.create(req.body);
     res.status(201).json({
       status: 'success',
@@ -150,13 +150,13 @@ exports.createTour = async (req, res) => {
         tour: newTour,
       },
     });
-  } catch (err) {
-    res.status(400).json({
-      status: 'failed',
-      message: 'Invalid ID Sent',
-    });
-  }
-};
+  // } catch (err) {
+  //   res.status(400).json({
+  //     status: 'failed',
+  //     message: 'Invalid ID Sent',
+  //   });
+  // }
+});
 
 exports.updateTour = async (req, res) => {
   try {
