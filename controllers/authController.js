@@ -1,4 +1,3 @@
-const {crypto}=require('crypto')
 const {promisify}=require('util');
 const AppError = require('../utils/appError');
 const User=require('./../models/userModel');
@@ -80,12 +79,16 @@ exports.restrictTo=(...roles)=>{
 
 exports.forgotPassword=catchAsync(async(req,res,next)=>{
   //1) Get User data by email
-  const user=await User.once({email:req.body.email});
+  const user=await User.findOne({email:req.body.email});
+  console.log(user);
   if(!user){
     return next(new AppError('There is no user with email address.'));
   }
+  //2) Generate the random reset token
+  const resetToken=user.createPasswordResetToken();
+  await user.save({validateBeforeSave:false});
 });
 
 exports.resetPassword=(req,res,next)=>{
-   const resetToken=crypto.randomBytes(32).toString
+   
 };
